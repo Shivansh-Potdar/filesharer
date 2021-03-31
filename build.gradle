@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'application'
+    id "org.springframework.boot" version "2.2.2.RELEASE"
+}
+
+group 'com.example'
+version '1'
+sourceCompatibility = 15
+
+//To run the class name from command line using gradle run
+mainClassName = 'com.example.Main'
+
+//Alternatively you can run it as a task too gradle -q  runWithJavaExec
+task runWithJavaExec(type: JavaExec) {
+    group = "Execution"
+    description = "Run the main class with JavaExecTask"
+    classpath = sourceSets.main.runtimeClasspath
+    main = mainClassName
+}
+
+task runp2p(type: JavaExec) {
+    group = "Execution"
+    description = "Run the main class with JavaExecTask"
+    classpath = sourceSets.main.runtimeClasspath
+    main = "com.example.p2p"
+}
+
+
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.jetbrains:annotations:20.1.0'
+    implementation 'org.jetbrains:annotations:20.1.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+test {
+    useJUnitPlatform()
+}
