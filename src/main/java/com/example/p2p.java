@@ -1,7 +1,6 @@
 package com.example;
 
 //Imports
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -15,17 +14,40 @@ import java.util.Scanner;
 
 public class p2p {
     //main
-    public static void main(String[] args) {
-        new Thread(() -> new Server().accept()).start();
+    public static void main(String[] args) throws InterruptedException {
 
-        new Thread(()-> new Client().connect()).start();
+        System.out.println("""
+                To send files type: S
+                To receive type: R
+                """);
+
+        try(Scanner inp = new Scanner(System.in)){
+            String choice = inp.next();
+
+            if (choice.contains("S".toLowerCase()))
+                new Thread(() -> new Server().accept()).start();
+
+            if (choice.contains("R".toLowerCase()))
+                new Thread(() -> {
+                    try {
+                        new Client().connect();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        try {
+                            new Client().reconnect();
+                        } catch (InterruptedException interruptedException) {
+                            interruptedException.printStackTrace();
+                        }
+                    }
+                }).start();
+        };
+
+
     }
 
     //Server Side
+    //Sends file
     static class Server{
-        void check(){
-
-        }
 
         void accept(){
             int port = 8080;
@@ -34,9 +56,7 @@ public class p2p {
 
                 System.out.println("Server is listening on port " + port);
 
-                boolean active = true;
-
-                while (active) {
+                while (true) {
                     try {
                         //Main setup
                         Socket socket = serverSocket.accept();
@@ -46,23 +66,16 @@ public class p2p {
                         OutputStream output = socket.getOutputStream();
                         PrintWriter writer = new PrintWriter(output, true);
 
-                        writer.println(new Date().toString());
+                        System.out.println("Enter File path: ");
+
+                        Scanner scn = new Scanner(System.in);
+                        String filePath = scn.next();
+
+                        sender(filePath);
 
                         //Set up Reader
                         InputStream input = socket.getInputStream();
                         BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-
-                        //Send echo
-                        String echoText = socket.getInetAddress().getHostName()+":\n"+converter(reader.readLine());
-                        System.out.println(echoText);
-
-                        //Exit code
-                        if(reader.readLine() != null){
-                            String exitVal = reader.readLine();
-
-                            if (exitVal.contentEquals("exit"))
-                                active = false;
-                        }
 
                     }catch (Exception e){
                         e.printStackTrace();
@@ -78,13 +91,16 @@ public class p2p {
     }
 
     //Client side
+    //Receives File
     static class Client {
 
-        void connect(){
+        void connect() throws InterruptedException {
             String hostname = "0.0.0.0";
             int port = 8080;
 
             try (Socket socket = new Socket(hostname, port)) {
+
+                System.out.println("Starting client");
 
                 InputStream input = socket.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(input));
@@ -92,15 +108,6 @@ public class p2p {
                 String time = reader.readLine();
 
                 System.out.println(time);
-
-                String encodedTime = Base64.getEncoder().encodeToString(time.getBytes(StandardCharsets.UTF_8));
-
-                System.out.println("Enter File path: ");
-
-                Scanner scn = new Scanner(System.in);
-                String filePath = scn.next();
-
-                downloader(filePath);
 
                 //Send reply
                 OutputStream output = socket.getOutputStream();
@@ -115,25 +122,25 @@ public class p2p {
                         """;
                 writer.println(Base64.getEncoder().encodeToString(reply.getBytes(StandardCharsets.UTF_8)));
 
-            } catch (UnknownHostException ex) {
+            } catch (Exception ex) {
 
-                System.out.println("Server not found: " + ex.getMessage());
-
-            } catch (IOException ex) {
-                System.out.println("I/O error: " + ex.getMessage());
-                System.out.println("""
-                    Please make sure server is online &
-                    All files are in place.
-                                """);
+                System.out.println("Error: " + ex.getMessage());
+                reconnect();
             }
         }
 
-        void send(){
-
+        void reconnect() throws InterruptedException {
+            System.out.println("""
+                        Could not connect to a server.
+                        Trying again in 5s.
+                    """);
+            Thread.sleep(5000);
+            connect();
         }
+
     }
 
-    public static void downloader(String message) throws IOException {
+    public static void sender(String message) throws IOException {
         //Make file
         File file = new File(message);
 
@@ -141,7 +148,9 @@ public class p2p {
 
         var base64File = Base64.getEncoder().encodeToString(fileBytes);
 
-        System.out.println("File written: "+base64File);
+
+        System.out.println("File sent: "+base64File);
+        System.out.println("File type: "+Files.probeContentType(file.toPath()));
     }
 
     public static String tob64(String s){

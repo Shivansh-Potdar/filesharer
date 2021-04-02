@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id "org.springframework.boot" version "2.2.2.RELEASE"
+    //id "org.springframework.boot" version "2.2.2.RELEASE"
 }
 
 group 'com.example'
@@ -9,7 +9,12 @@ version '1'
 sourceCompatibility = 15
 
 //To run the class name from command line using gradle run
-mainClassName = 'com.example.Main'
+mainClassName = 'com.example.p2p'
+
+//gradle run config
+run{
+    standardInput = System.in
+}
 
 //Alternatively you can run it as a task too gradle -q  runWithJavaExec
 task runWithJavaExec(type: JavaExec) {
@@ -23,7 +28,7 @@ task runp2p(type: JavaExec) {
     group = "Execution"
     description = "Run the main class with JavaExecTask"
     classpath = sourceSets.main.runtimeClasspath
-    main = "com.example.p2p"
+    main = mainClassName
 }
 
 
